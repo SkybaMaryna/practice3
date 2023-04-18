@@ -1,64 +1,53 @@
-import { nanoid } from 'nanoid';
-import { data } from '../data/users';
-import { UserList } from './user-list/UserList';
-import { Section } from './section/Section';
 import { Component } from 'react';
-import { Button } from './button/Button';
-import { AddUserForm } from './addUserForm/AddUserForm';
+import movies from '../data/movies.json';
+import { MoviesGallery } from './MoviesGallery/MoviesGallery';
+import { Modal } from './Modal/Modal';
 
 export class App extends Component {
   state = {
-    isListSown: false,
-    users: data,
-    isFormShown: false,
+    movies: movies,
+    currentPoster: null,
   };
 
-  showList = () => {
-    this.setState({ isListSown: true });
-  };
+  componentDidMount() {
+    const data = localStorage.getItem('movies');
+    if (data !== null) {
+      this.setState({ movies: JSON.parse(data) });
+    }
+  }
 
-  deleteUser = id => {
+  componentDidUpdate(prevProps, prevState) {
+    if (this.state.movies !== prevState.movies) {
+      localStorage.setItem('movies', JSON.stringify(this.state.movies));
+    }
+  }
+
+  handleDelete = id => {
     this.setState(prevState => {
-      return { users: prevState.users.filter(user => user.id !== id) };
+      return { movies: prevState.movies.filter(movie => movie.id !== id) };
     });
   };
 
-  showForm = () => {
-    this.setState({ isFormShown: true });
+  openModal = data => {
+    this.setState({ currentPoster: data });
   };
 
-  addUser = data => {
-    const newUser = { id: nanoid(), ...data };
-    this.setState(prevState => {
-      return { users: [...prevState.users, newUser] };
-    });
-  };
-
-  closeForm = () => {
-    this.setState({ isFormShown: false });
+  closeModal = () => {
+    this.setState({ currentPoster: null });
   };
 
   render() {
-    const { isListSown, users, isFormShown } = this.state;
+    const { movies, currentPoster } = this.state;
     return (
       <>
-        <Section title="List of users">
-          {!isListSown ? (
-            <Button text="Show list of users" clickHandler={this.showList} />
-          ) : (
-            <>
-              <UserList users={users} deleteUser={this.deleteUser} />
-              {isFormShown ? (
-                <AddUserForm
-                  addUser={this.addUser}
-                  closeForm={this.closeForm}
-                />
-              ) : (
-                <Button text="Add user" clickHandler={this.showForm} />
-              )}
-            </>
-          )}
-        </Section>
+        <MoviesGallery
+          movies={movies}
+          onDelete={this.handleDelete}
+          openModal={this.openModal}
+        />
+        {currentPoster && (
+          <Modal poster={currentPoster} closeModal={this.closeModal} />
+        )}
       </>
     );
   }
