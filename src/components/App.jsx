@@ -1,24 +1,30 @@
 import { Component } from 'react';
-import movies from '../data/movies.json';
 import { MoviesGallery } from './MoviesGallery/MoviesGallery';
 import { Modal } from './Modal/Modal';
+import { fetchMovies } from 'services/moviesAPI';
+import { Button } from 'components/button/Button';
+import { Loader } from './Loader/Loader';
 
 export class App extends Component {
   state = {
-    movies: movies,
+    movies: [],
     currentPoster: null,
+    isListShown: false,
+    page: 1,
+    isLoading: false,
+    error: '',
   };
 
-  componentDidMount() {
-    const data = localStorage.getItem('movies');
-    if (data !== null) {
-      this.setState({ movies: JSON.parse(data) });
-    }
-  }
-
   componentDidUpdate(prevProps, prevState) {
-    if (this.state.movies !== prevState.movies) {
-      localStorage.setItem('movies', JSON.stringify(this.state.movies));
+    const { isListShown, page } = this.state;
+    if (
+      (prevState.isListShown !== isListShown || prevState.page !== page) &&
+      isListShown
+    ) {
+      this.getMovies();
+    }
+    if (prevState.isListShown !== this.state.isListShown && !isListShown) {
+      this.setState({ movies: [], page: 1 });
     }
   }
 
@@ -36,15 +42,49 @@ export class App extends Component {
     this.setState({ currentPoster: null });
   };
 
+  toggleList = () => {
+    const { isListShown } = this.state;
+    this.setState({ isListShown: !isListShown });
+  };
+
+  getMovies = () => {
+    this.setState({ isLoading: true });
+    fetchMovies(this.state.page)
+      .then(({ data: { results } }) =>
+        this.setState(prevState => ({
+          movies: [...prevState.movies, ...results],
+        }))
+      )
+      .catch(error => this.setState({ error: error.message }))
+      .finally(() => this.setState({ isLoading: false }));
+  };
+
+  loadMore = () => {
+    this.setState(prevState => ({ page: prevState.page + 1 }));
+  };
+
   render() {
-    const { movies, currentPoster } = this.state;
+    const { movies, currentPoster, isListShown, isLoading } = this.state;
     return (
       <>
-        <MoviesGallery
-          movies={movies}
-          onDelete={this.handleDelete}
-          openModal={this.openModal}
+        <Button
+          text={isListShown ? 'Hide movies list' : 'Show movies list'}
+          clickHandler={this.toggleList}
         />
+
+        {isLoading && <Loader />}
+
+        {isListShown && (
+          <>
+            <MoviesGallery
+              movies={movies}
+              onDelete={this.handleDelete}
+              openModal={this.openModal}
+            />
+            <Button text="Load more" clickHandler={this.loadMore} />
+          </>
+        )}
+
         {currentPoster && (
           <Modal poster={currentPoster} closeModal={this.closeModal} />
         )}
