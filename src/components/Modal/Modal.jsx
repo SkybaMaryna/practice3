@@ -1,6 +1,20 @@
 import React, { Component } from 'react';
 
 export class Modal extends Component {
+  componentDidMount() {
+    window.addEventListener('keydown', this.handleKeydown);
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener('keydown', this.handleKeydown);
+  }
+
+  handleKeydown = e => {
+    if (e.key === 'Escape') {
+      this.props.closeModal();
+    }
+  };
+
   render() {
     const { src, alt } = this.props.poster;
     return (
