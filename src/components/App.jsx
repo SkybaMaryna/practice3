@@ -99,6 +99,9 @@ import { fetchMovies } from 'services/moviesAPI';
 import { Button } from 'components/button/Button';
 import { Loader } from './Loader/Loader';
 import { useEffect, useState } from 'react';
+import { AuthNav } from './AuthNav/AuthNav';
+import React, { useContext } from 'react';
+import { AuthContext } from 'Context/Context';
 
 export const App = () => {
   const [movies, setMovies] = useState([]);
@@ -108,12 +111,14 @@ export const App = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const { isAuth } = useContext(AuthContext);
+
   useEffect(() => {
     if (isListShown) {
       setIsLoading(true);
       fetchMovies(page)
         .then(({ data: { results } }) =>
-          setMovies(prevState => [...prevState.movies, ...results])
+          setMovies(prevState => [...prevState, ...results])
         )
         .catch(error => setError(error.message))
         .finally(() => setIsLoading(false));
@@ -148,26 +153,33 @@ export const App = () => {
 
   return (
     <>
-      <Button
-        text={isListShown ? 'Hide movies list' : 'Show movies list'}
-        clickHandler={toggleList}
-      />
-
-      {isLoading && <Loader />}
-
-      {isListShown && (
+      <AuthNav />
+      {isAuth ? (
         <>
-          <MoviesGallery
-            movies={movies}
-            onDelete={handleDelete}
-            openModal={openModal}
+          <Button
+            text={isListShown ? 'Hide movies list' : 'Show movies list'}
+            clickHandler={toggleList}
           />
-          <Button text="Load more" clickHandler={loadMore} />
-        </>
-      )}
 
-      {currentPoster && (
-        <Modal poster={currentPoster} closeModal={closeModal} />
+          {isLoading && <Loader />}
+
+          {isListShown && (
+            <>
+              <MoviesGallery
+                movies={movies}
+                onDelete={handleDelete}
+                openModal={openModal}
+              />
+              <Button text="Load more" clickHandler={loadMore} />
+            </>
+          )}
+
+          {currentPoster && (
+            <Modal poster={currentPoster} closeModal={closeModal} />
+          )}
+        </>
+      ) : (
+        <p>"Login please"</p>
       )}
     </>
   );
